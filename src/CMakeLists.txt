@@ -5,6 +5,9 @@ include_directories (${CMAKE_SOURCE_DIR}
                      ${CMAKE_SOURCE_DIR}/src/columns
                      ${CMAKE_SOURCE_DIR}/src/libshared/src
                      ${TASK_INCLUDE_DIRS})
+if (EMBEDDED_ANDROID)
+	include_directories (${CMAKE_SOURCE_DIR}/src/glob ${CMAKE_SOURCE_DIR}/src/uuid ${TASK_INCLUDE_DIRS})
+endif (EMBEDDED_ANDROID)
 
 add_library (task CLI2.cpp CLI2.h
                   Context.cpp Context.h
@@ -47,21 +50,24 @@ add_library (libshared libshared/src/Color.cpp         libshared/src/Color.h
                        libshared/src/wcwidth6.cpp)
 
 add_executable (task_executable main.cpp)
-add_executable (calc_executable calc.cpp)
-add_executable (lex_executable lex.cpp)
+if (EMBEDDED_ANDROID)
+	target_link_libraries (task_executable task commands columns libshared uuid glob task libshared ${TASK_LIBRARIES})
+else (EMBEDDED_ANDROID)
+    add_executable (calc_executable calc.cpp)
+    add_executable (lex_executable lex.cpp)
 
-# Yes, 'task' (and hence libshared) is included twice, otherwise linking fails on assorted OSes.
-target_link_libraries (task_executable task commands columns libshared task libshared ${TASK_LIBRARIES})
-target_link_libraries (calc_executable task commands columns libshared task libshared ${TASK_LIBRARIES})
-target_link_libraries (lex_executable  task commands columns libshared task libshared ${TASK_LIBRARIES})
+    # Yes, 'task' (and hence libshared) is included twice, otherwise linking fails on assorted OSes.
+    target_link_libraries (task_executable task commands columns libshared task libshared ${TASK_LIBRARIES})
+    target_link_libraries (calc_executable task commands columns libshared task libshared ${TASK_LIBRARIES})
+    target_link_libraries (lex_executable  task commands columns libshared task libshared ${TASK_LIBRARIES})
+
+    set_property (TARGET calc_executable PROPERTY OUTPUT_NAME "calc")
+    set_property (TARGET lex_executable PROPERTY OUTPUT_NAME "lex")
+endif (EMBEDDED_ANDROID)
 
 set_property (TARGET task_executable PROPERTY OUTPUT_NAME "task")
 
 install (TARGETS task_executable DESTINATION ${TASK_BINDIR})
-
-set_property (TARGET calc_executable PROPERTY OUTPUT_NAME "calc")
-set_property (TARGET lex_executable PROPERTY OUTPUT_NAME "lex")
-
 #SET(CMAKE_BUILD_TYPE gcov)
 #SET(CMAKE_CXX_FLAGS_GCOV "--coverage")
 #SET(CMAKE_C_FLAGS_GCOV "--coverage")
